@@ -1,0 +1,13 @@
+# Larangan studi kasus: Jangan commit salinan kedua CSV artikel mentah & secrets
+*.csv
+use_cases/
+pipelineData/
+.env
+
+# Lingkungan Python & Cache
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
