@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Layanan NER Artikel - Maybank Pipeline</title>
+  <style>
+    :root { --primary: #2563eb; --primary-hover: #1d4ed8; --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #0f172a; }
+    body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); max-width: 920px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+    h1 { margin-top: 0; font-size: 1.5rem; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-weight: 600; margin-bottom: 0.35rem; }
+    input, textarea { width: 100%; padding: 0.65rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
+    .btn-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+    button { background: var(--primary); color: #fff; border: none; padding: 0.65rem 1.25rem; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    button:hover { background: var(--primary-hover); }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-secondary { background: #475569; }
+    #loading { display: none; color: var(--primary); font-weight: 600; margin-top: 0.75rem; }
+    #error-box { display: none; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 0.75rem 1rem; border-radius: 6px; margin-top: 1rem; }
+    .highlight-container { background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; white-space: pre-wrap; line-height: 1.9; }
+    mark { padding: 0.15rem 0.35rem; border-radius: 4px; font-weight: 500; }
+    .lbl-PERSON { background: #fce7f3; color: #9d174d; }
+    .lbl-ORG    { background: #dbeafe; color: #1e40af; }
+    .lbl-GPE    { background: #dcfce7; color: #166534; }
+    .lbl-LOC    { background: #fef9c3; color: #854d0e; }
+    .lbl-DATE   { background: #f3e8ff; color: #6b21a8; }
+    .lbl-EVENT  { background: #ffedd5; color: #9a3412; }
+    .badge { font-size: 0.75rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 0.25rem; background: rgba(255,255,255,0.7); }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.75rem; }
+    th, td { border: 1px solid var(--border); padding: 0.6rem 0.75rem; text-align: left; }
+    th { background: #f8fafc; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Layanan Named-Entity Recognition (NER) Artikel</h1>
+    <p style="margin-top:0; color:#475569;">Masukkan judul dan isi artikel berita untuk mengekstraksi entitas bernama (PERSON, ORG, GPE, LOC, DATE, EVENT).</p>
+    <form id="ner-form">
+      <div class="form-group">
+        <label for="title">Judul Artikel (Title)</label>
+        <input type="text" id="title" placeholder="Contoh: Bursa Malaysia Retreats on Profit-Taking" />
+      </div>
+      <div class="form-group">
+        <label for="body">Isi Artikel (Body)</label>
+        <textarea id="body" rows="6" placeholder="Masukkan isi artikel lengkap di sini..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button type="submit" id="submit-btn">Analisis Artikel</button>
+        <button type="button" class="btn-secondary" id="sample-btn">Isi Contoh Artikel Maybank</button>
+      </div>
+    </form>
+    <div id="loading">⏳ Sedang memproses dan mengekstraksi entitas...</div>
+    <div id="error-box"></div>
+  </div>
+  <div class="card" id="result-card" style="display:none;">
+    <h2 style="margin-top:0; font-size:1.2rem;">Hasil Analisis (<span id="entity-count">0</span> Entitas ditemukan | Model: <code id="model-name">-</code>)</h2>
+    <h3 style="font-size:1rem; margin-bottom:0.5rem;">Sorotan Teks Gabungan (Title + Body):</h3>
+    <div id="highlighted-text" class="highlight-container"></div>
+    <h3 style="font-size:1rem; margin-top:1.5rem; margin-bottom:0.5rem;">Tabel Detail Entitas:</h3>
+    <table>
+      <thead><tr><th>Teks Entitas (text)</th><th>Kategori (label)</th><th>Offset Awal (start)</th><th>Offset Akhir (end)</th></tr></thead>
+      <tbody id="entity-tbody"></tbody>
+    </table>
+  </div>
+  <script>
+    const form = document.getElementById('ner-form');
+    const titleInput = document.getElementById('title');
+    const bodyInput = document.getElementById('body');
+    const loadingEl = document.getElementById('loading');
+    const errorBox = document.getElementById('error-box');
+    const resultCard = document.getElementById('result-card');
+    const submitBtn = document.getElementById('submit-btn');
+    const sampleBtn = document.getElementById('sample-btn');
+    sampleBtn.addEventListener('click', () => {
+      titleInput.value = "Bursa Malaysia Retreats on Banking Pressure";
+      bodyInput.value = "KUALA LUMPUR, Oct 7 — Bursa Malaysia opened lower on Wednesday, October 7, 2026, as heavyweight banking stocks including Maybank, CIMB, and Hong Leong Bank faced selling pressure in Kuala Lumpur.";
+    });
+    function escapeHtml(str) { return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.style.display = 'none';
+      resultCard.style.display = 'none';
+      const title = titleInput.value;
+      const body = bodyInput.value;
+      if (!title.trim() && !body.trim()) {
+        errorBox.textContent = "Validasi Panel: Judul dan isi artikel tidak boleh sama-sama kosong.";
+        errorBox.style.display = 'block';
+        return;
+      }
+      loadingEl.style.display = 'block';
+      submitBtn.disabled = true;
+      try {
+        const res = await fetch('/extract-entities', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, body })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Terjadi kesalahan saat memproses permintaan.");
+        document.getElementById('entity-count').textContent = data.meta.entity_count;
+        document.getElementById('model-name').textContent = data.meta.model;
+        const tTrim = title.trim(), bTrim = body.trim();
+        const combined = (tTrim && bTrim) ? `${tTrim}. ${bTrim}` : (tTrim || bTrim);
+        const sorted = [...data.entities].sort((a, b) => a.start - b.start);
+        let html = '', cursor = 0;
+        for (const ent of sorted) {
+          if (ent.start >= cursor) {
+            html += escapeHtml(combined.slice(cursor, ent.start));
+            html += `<mark class="lbl-${escapeHtml(ent.label)}">${escapeHtml(combined.slice(ent.start, ent.end))}<span class="badge">${escapeHtml(ent.label)}</span></mark>`;
+            cursor = ent.end;
+          }
+        }
+        html += escapeHtml(combined.slice(cursor));
+        document.getElementById('highlighted-text').innerHTML = html;
+        const tbody = document.getElementById('entity-tbody');
+        tbody.innerHTML = data.entities.length === 0
+          ? '<tr><td colspan="4" style="text-align:center;">Tidak ada named entity yang terdeteksi.</td></tr>'
+          : data.entities.map(ent => `<tr><td><strong>${escapeHtml(ent.text)}</strong></td><td><mark class="lbl-${escapeHtml(ent.label)}">${escapeHtml(ent.label)}</mark></td><td>${ent.start}</td><td>${ent.end}</td></tr>`).join('');
+        resultCard.style.display = 'block';
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.style.display = 'block';
+      } finally {
+        loadingEl.style.display = 'none';
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
