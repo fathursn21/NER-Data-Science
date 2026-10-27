@@ -114,7 +114,6 @@ uvicorn src.app:app --reload --port 8000
 
 Setelah server berjalan, akses layanan melalui browser di:
 - **Panel Web Interaktif:** `http://127.0.0.1:8000` (atau `http://localhost:8000`)
-- **Dokumentasi OpenAPI (Swagger UI):** `http://127.0.0.1:8000/docs`
 
 ### 4. Menjalankan Pengujian Otomatis
 
