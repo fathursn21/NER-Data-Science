@@ -85,7 +85,7 @@ project/
 ## ⚙️ Panduan Instalasi & Cara Menjalankan
 
 ### 1. Prasyarat & Virtual Environment
-Pastikan **Python versi 3.10, 3.11, atau 3.12** sudah terinstal (disarankan menggunakan rentang versi tersebut agar paket *pre-built binary wheels* `spacy` dan `numpy` terinstal lancar tanpa kendala kompilasi C++). Buat dan aktifkan *virtual environment*:
+Pastikan **Python versi 3.12 atau setelahnya** sudah terinstal (disarankan menggunakan rentang versi tersebut agar paket *pre-built binary wheels* `spacy` dan `numpy` terinstal lancar tanpa kendala kompilasi C++). Buat dan aktifkan *virtual environment*:
 
 ```bash
 # Untuk Windows (CMD / PowerShell)
@@ -129,15 +129,15 @@ pytest -v
 Berikut adalah daftar paket dan versi spesifik yang digunakan pada proyek ini:
 
 ```text
-numpy==1.26.4
-spacy==3.8.0
-fastapi==0.115.0
-uvicorn==0.30.6
-pydantic==2.9.2
-pytest==8.3.3
-httpx==0.27.2
-pandas==2.2.2
-scikit-learn==1.5.2
+numpy>=1.26.4
+spacy>=3.8.0
+fastapi>=0.115.0
+uvicorn>=0.30.6
+pydantic>=2.9.2
+pytest>=8.3.3
+httpx>=0.27.2
+pandas>=2.2.2
+scikit-learn>=1.5.2
 ```
 
 ---
