@@ -1,3 +1,5 @@
+Video Presentasi : https://drive.google.com/file/d/1sw1EP79uy-QTXZEYYa37rVuAgwfWR2TP/view?usp=sharing 
+
 # Article Named-Entity Recognition (NER) Service
 
 Layanan berbasis API dan antarmuka web interaktif untuk mengidentifikasi dan mengekstrak entitas bernama (*Named Entities*) seperti Nama Orang (`PERSON`), Perusahaan/Organisasi (`ORG`), Lokasi Geopolitik (`GPE`), Tempat Fisik (`LOC`), Tanggal/Waktu (`DATE`), dan Acara Khusus (`EVENT`) dari judul dan isi artikel berita online.
